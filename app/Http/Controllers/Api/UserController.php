@@ -8,17 +8,36 @@ use App\Http\Controllers\Controller;
 class UserController extends Controller
 {
     /**
-     * 登录借口
+     * 登录接口
      */
     public function login(){
-        header('Access-Control-Allow-Origin:*');//允许所有来源访问
-        header('Access-Control-Allow-Method:POST,GET');//允许访问的方式 　　
         $data = [
             'code'=>20000,
-            'message'=>'ok',
+            'data'=>[
+                'token'=>'admin'
+            ],
 
 
         ];
-        return response()->json('1111');
+        return response()->json($data);
+    }
+
+    /**
+     * 信息接口
+     */
+    public function info(){
+        $data = [
+            'code'=>20000,
+            'data'=>[
+                'roles'=>[
+                    'admin'
+                ],
+                'name'=>'admin',
+                'avatar'=>'http://img1.duimian.cn/MediaServerMblove/servlet/Proxy/PhotoServlet/FhZfAO2EX2Q-uidKxnqZp_fNLy5f.jpg'
+            ],
+
+
+        ];
+        return response()->json($data);
     }
 }

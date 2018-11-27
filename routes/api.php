@@ -23,6 +23,7 @@ Route::middleware('auth:api')->get('/test',function (){
 
 
 Route::middleware('cors')->any('/user/login', 'Api\UserController@login')->name('login');
+Route::middleware('cors')->any('/user/info', 'Api\UserController@info')->name('info');
 
 use App\User;
 use App\Http\Resources\UserResource;
