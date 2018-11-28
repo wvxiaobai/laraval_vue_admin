@@ -21,9 +21,13 @@ Route::middleware('auth:api')->get('/test',function (){
     return 'test';
 });
 
-
+//登录相关
 Route::middleware('cors')->any('/user/login', 'Api\UserController@login')->name('login');
 Route::middleware('cors')->any('/user/info', 'Api\UserController@info')->name('info');
+
+
+//权限管理
+Route::middleware('cors')->any('/permission/userList', 'Api\PermissionController@userList')->name('userList');
 
 use App\User;
 use App\Http\Resources\UserResource;
