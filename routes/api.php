@@ -28,6 +28,14 @@ Route::middleware('cors')->any('/user/info', 'Api\UserController@info')->name('i
 
 //权限管理
 Route::middleware('cors')->any('/permission/userList', 'Api\PermissionController@userList')->name('userList');
+Route::middleware('cors')->any('/permission/updateUser', 'Api\PermissionController@updateUser')->name('updateUser');
+Route::middleware('cors')->any('/permission/createUser', 'Api\PermissionController@createUser')->name('createUser');
+Route::middleware('cors')->any('/permission/deleteUser', 'Api\PermissionController@deleteUser')->name('deleteUser');
+
+Route::middleware('cors')->any('/permission/roleList', 'Api\PermissionController@roleList')->name('roleList');
+Route::middleware('cors')->any('/permission/updateRole', 'Api\PermissionController@updateRole')->name('updateRole');
+Route::middleware('cors')->any('/permission/createRole', 'Api\PermissionController@createRole')->name('createRole');
+Route::middleware('cors')->any('/permission/deleteRole', 'Api\PermissionController@deleteRole')->name('deleteRole');
 
 use App\User;
 use App\Http\Resources\UserResource;
