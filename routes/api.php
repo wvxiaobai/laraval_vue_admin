@@ -37,6 +37,11 @@ Route::middleware('cors')->any('/permission/updateRole', 'Api\PermissionControll
 Route::middleware('cors')->any('/permission/createRole', 'Api\PermissionController@createRole')->name('createRole');
 Route::middleware('cors')->any('/permission/deleteRole', 'Api\PermissionController@deleteRole')->name('deleteRole');
 
+Route::middleware('cors')->any('/permission/menuList', 'Api\PermissionController@menuList')->name('menuList');
+Route::middleware('cors')->any('/permission/updateMenu', 'Api\PermissionController@updateMenu')->name('updateMenu');
+Route::middleware('cors')->any('/permission/createMenu', 'Api\PermissionController@createMenu')->name('createMenu');
+Route::middleware('cors')->any('/permission/deleteMenu', 'Api\PermissionController@deleteMenu')->name('deleteMenu');
+
 use App\User;
 use App\Http\Resources\UserResource;
 
