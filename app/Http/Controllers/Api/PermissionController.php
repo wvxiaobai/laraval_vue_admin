@@ -318,6 +318,7 @@ class PermissionController extends Controller
 //            },
 //          ]
 //        }
+
         $tmp = [];
         //无限极分类
         //构造函数
@@ -336,7 +337,7 @@ class PermissionController extends Controller
                 $tree[] = &$tmp[$k];
             }
 
-            $indexs[$v['id']] = $v['index'];
+            // $indexs[$v['id']] = $v['index'];
 
 //            $tmp[$v['id']] = [
 //                'id' => $v['id'],
@@ -347,14 +348,60 @@ class PermissionController extends Controller
 //            ];
         }
         unset($v);
-        $users['items']   = $tree;
-        $users['indexs'] = $indexs;
+
+
+//        [{
+//        label: '热门城市',
+//          options: [{
+//            value: 'Shanghai',
+//            label: '上海'
+//          }, {
+//            value: 'Beijing',
+//            label: '北京'
+//          }]
+//        }
+
+        $menus = [];
+        foreach ($tree as $k=>$v){
+            $menus[$k] = [
+                'label' => $v['name'],
+            ];
+            if($v['children']){
+                $options_tmp =  $this->_getChild($v['children']);
+                $menus[$k]['options'] = $options_tmp;
+            }
+            array_unshift($menus[$k]['options'],['value'=> $v['id'],'label'=> $v['name']]);
+        }
+        $users['items'] = $tree;
+        $users['indexs']= $indexs;
+        $users['menus'] = $menus;
 
         $data = [
             'code' => 20000,
             'data' => $users,
         ];
         return response()->json($data);
+    }
+
+    private function _getChild($children, $n=6){
+        $options = [];
+        $strTmp='——';
+        foreach ($children as $v1) {
+            $strTmp = str_pad($strTmp,$n,$strTmp);
+            $options[] = [
+                'value'=> $v1['id'],
+                'label'=> '|'.$strTmp.$v1['name'],
+                'n'=> $n,
+            ];
+
+            if(isset($v1['children']) && $v1['children'] ){
+                $n += 6;
+                //echo $strTmp.$n."<br />";die();
+                $options[] = $this->_getChild($v1['children'], $n);
+                $n = 6;
+            }
+        }
+        return $options;
     }
 
     /**
