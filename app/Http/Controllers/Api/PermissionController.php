@@ -327,7 +327,7 @@ class PermissionController extends Controller
         }
 
         //遍历数据生成tree
-        $tree = [];
+        $tree = $indexs = [];
         foreach ($tmp as $k=>$v) {
             $tmp[$k]['event'] = $v['name'];
             if(isset($tmp[$v['pid']])){
@@ -335,6 +335,8 @@ class PermissionController extends Controller
             }else{
                 $tree[] = &$tmp[$k];
             }
+
+            $indexs[$v['id']] = $v['index'];
 
 //            $tmp[$v['id']] = [
 //                'id' => $v['id'],
@@ -345,11 +347,42 @@ class PermissionController extends Controller
 //            ];
         }
         unset($v);
-        $users['items'] = $tree;
+        $users['items']   = $tree;
+        $users['indexs'] = $indexs;
 
         $data = [
             'code' => 20000,
             'data' => $users,
+        ];
+        return response()->json($data);
+    }
+
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     * 更新菜单列表
+     */
+    public function updateMenuSort(Request $request)
+    {
+        $ids = $request->input('id');
+        $code = 20000;
+        if (!$ids) {
+            $code = 500;
+            $data = [
+                'code' => $code,
+                'data' => [],
+            ];
+            return response()->json($data);
+        }
+
+        foreach ($ids as $k=>$v){
+            $data['index'] = $v;
+            $ids[$k] = DB::connection('mysql_crm')->table('admin_menu')->where('id', $k)->update($data);
+        }
+
+        $data = [
+            'code' => $code,
+            'data' => $ids,
         ];
         return response()->json($data);
     }

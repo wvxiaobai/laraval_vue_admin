@@ -39,6 +39,7 @@ Route::middleware('cors')->any('/permission/deleteRole', 'Api\PermissionControll
 
 Route::middleware('cors')->any('/permission/menuList', 'Api\PermissionController@menuList')->name('menuList');
 Route::middleware('cors')->any('/permission/updateMenu', 'Api\PermissionController@updateMenu')->name('updateMenu');
+Route::middleware('cors')->any('/permission/updateMenuSort', 'Api\PermissionController@updateMenuSort')->name('updateMenuSort');
 Route::middleware('cors')->any('/permission/createMenu', 'Api\PermissionController@createMenu')->name('createMenu');
 Route::middleware('cors')->any('/permission/deleteMenu', 'Api\PermissionController@deleteMenu')->name('deleteMenu');
 
