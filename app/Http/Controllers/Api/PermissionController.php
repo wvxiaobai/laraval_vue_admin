@@ -319,16 +319,40 @@ class PermissionController extends Controller
 //          ]
 //        }
 
-        $tmp = [];
+        $roles = DB::connection('mysql_crm')->table('admin_role')->get();
+
+        $tmp = $menuRole = [];
         //无限极分类
         //构造函数
-        foreach ($items as $v) {
+        foreach ($items as &$v) {
             $v = (array)$v;
+
+            foreach ($roles as $k1 => $v1) {
+                $v1 = (array)$v1;
+                $menu = $v1['menu'] ? json_decode($v1['menu'], true) : [];
+//                $v['menuRole'][1][$k1] = 0;
+//                $v['menuRole'][2][$k1] = 0;
+//                $v['menuRole'][3][$k1] = 0;
+                foreach ($menu as $k2 => $v2) {
+                    if($k2 == $v['id']){
+                        isset($v2[1])&&$v2[1] ? $v['menuRole'][1][]=$v1['name']:'';
+                        isset($v2[2])&&$v2[2] ? $v['menuRole'][2][]=$v1['name']:'';
+                        isset($v2[3])&&$v2[3] ? $v['menuRole'][3][]=$v1['name']:'';
+                        // $v['menuRole'][3][$k1] = isset($v2[3])?$v2[3]:0;
+                        break;
+                    }else{
+                        continue;
+                    }
+                }
+            }
+
             $tmp[$v['id']] = $v;
-        }
+        }unset($v);
 
         //遍历数据生成tree
         $tree = $indexs = [];
+
+
         foreach ($tmp as $k=>$v) {
             $tmp[$k]['event'] = $v['name'];
             if(isset($tmp[$v['pid']])){
@@ -336,32 +360,10 @@ class PermissionController extends Controller
             }else{
                 $tree[] = &$tmp[$k];
             }
-
-            // $indexs[$v['id']] = $v['index'];
-
-//            $tmp[$v['id']] = [
-//                'id' => $v['id'],
-//                'pid' => $v['pid'],
-//                'event' => $v['name'],
-//                'timeLine' => 100,
-//                'comment' => '无'
-//            ];
         }
         unset($v);
 
-
-//        [{
-//        label: '热门城市',
-//          options: [{
-//            value: 'Shanghai',
-//            label: '上海'
-//          }, {
-//            value: 'Beijing',
-//            label: '北京'
-//          }]
-//        }
-
-        $menus = [];
+        $menus = [''=>ding];
         foreach ($tree as $k=>$v){
             $menus[$k] = [
                 'label' => $v['name'],
@@ -374,7 +376,8 @@ class PermissionController extends Controller
         }
         $users['items'] = $tree;
         $users['indexs']= $indexs;
-        $users['menus'] = $menus;
+        $users['menusSelect'] = $menus;
+        $users['rolesCheck'] = $roles;
 
         $data = [
             'code' => 20000,
@@ -385,19 +388,20 @@ class PermissionController extends Controller
 
     private function _getChild($children, $n=6){
         $options = [];
-        $strTmp='——';
+        $strTmp='______';
         foreach ($children as $v1) {
             $strTmp = str_pad($strTmp,$n,$strTmp);
             $options[] = [
                 'value'=> $v1['id'],
-                'label'=> '|'.$strTmp.$v1['name'],
+                'label'=> $strTmp.$v1['name'],
                 'n'=> $n,
             ];
 
             if(isset($v1['children']) && $v1['children'] ){
                 $n += 6;
                 //echo $strTmp.$n."<br />";die();
-                $options[] = $this->_getChild($v1['children'], $n);
+                $options_tmp = $this->_getChild($v1['children'], $n);
+                $options = array_merge($options,$options_tmp);
                 $n = 6;
             }
         }
