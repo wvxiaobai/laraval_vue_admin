@@ -303,22 +303,6 @@ class PermissionController extends Controller
         DB::connection('mysql_crm')->enableQueryLog();  // 开启QueryLog
         $items = DB::connection('mysql_crm')->table('admin_menu')->orderBy('pid','asc')->get();
 
-//        data:
-//        {
-//          id:1,
-//          event: '事件1',
-//          timeLine: 100,
-//          comment: '无',
-//          children: [
-//            {
-//              id:2,
-//              event: '事件2',
-//              timeLine: 10,
-//              comment: '无'
-//            },
-//          ]
-//        }
-
         $roles = DB::connection('mysql_crm')->table('admin_role')->get();
 
         $tmp = $menuRole = [];
@@ -330,14 +314,11 @@ class PermissionController extends Controller
             foreach ($roles as $k1 => $v1) {
                 $v1 = (array)$v1;
                 $menu = $v1['menu'] ? json_decode($v1['menu'], true) : [];
-//                $v['menuRole'][1][$k1] = 0;
-//                $v['menuRole'][2][$k1] = 0;
-//                $v['menuRole'][3][$k1] = 0;
                 foreach ($menu as $k2 => $v2) {
                     if($k2 == $v['id']){
-                        isset($v2[1])&&$v2[1] ? $v['menuRole'][1][]=$v1['name']:'';
-                        isset($v2[2])&&$v2[2] ? $v['menuRole'][2][]=$v1['name']:'';
-                        isset($v2[3])&&$v2[3] ? $v['menuRole'][3][]=$v1['name']:'';
+                        isset($v2[1])&&$v2[1] ? $v['menuRole'][1][]=$v1['id']:'';
+                        isset($v2[2])&&$v2[2] ? $v['menuRole'][2][]=$v1['id']:'';
+                        isset($v2[3])&&$v2[3] ? $v['menuRole'][3][]=$v1['id']:'';
                         // $v['menuRole'][3][$k1] = isset($v2[3])?$v2[3]:0;
                         break;
                     }else{
@@ -363,16 +344,24 @@ class PermissionController extends Controller
         }
         unset($v);
 
-        $menus = [''=>ding];
+        $menus = [ 0 =>[
+            'label' => '顶级菜单',
+            'options'=>[
+                0=>[
+                    'value'=> 0,
+                    'label'=> '顶级菜单',
+                ]
+            ]
+        ]];
         foreach ($tree as $k=>$v){
-            $menus[$k] = [
+            $menus[$k+1] = [
                 'label' => $v['name'],
             ];
             if($v['children']){
                 $options_tmp =  $this->_getChild($v['children']);
-                $menus[$k]['options'] = $options_tmp;
+                $menus[$k+1]['options'] = $options_tmp;
             }
-            array_unshift($menus[$k]['options'],['value'=> $v['id'],'label'=> $v['name']]);
+            array_unshift($menus[$k+1]['options'],['value'=> $v['id'],'label'=> $v['name']]);
         }
         $users['items'] = $tree;
         $users['indexs']= $indexs;
@@ -386,6 +375,11 @@ class PermissionController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * @param $children
+     * @param int $n
+     * @return array
+     */
     private function _getChild($children, $n=6){
         $options = [];
         $strTmp='______';
@@ -456,21 +450,42 @@ class PermissionController extends Controller
             return response()->json($data);
         }
 
-        $password = $request->input('password');
-        if ($password && $password != '********') {
-            $data['password'] = $password;
+        $data['pid'] = $request->input('pid');
+        $data['name'] = $request->input('name');
+        $data['path'] = $request->input('path');
+        $data['url'] = $request->input('url');
+        DB::connection('mysql_crm')->table('admin_menu')->where('id', $id)->update($data);
+
+        $menuRole = $request->input('menuRole');
+        $menuRole = json_decode($menuRole,true);
+        $menuRoleTmp = [];
+        $RoleTmp = [];
+        foreach ($menuRole as $k=>$v){
+            foreach ($v as $k1=>$v1){
+                $menuRoleTmp[$v1][$k] = 1;
+                $RoleTmp[] = $v1;
+            }
         }
 
-        $data['disabled'] = $request->input('disabled');
-        $data['email'] = $request->input('email');
-        $data['account'] = $request->input('account');
-        $data['rid'] = $request->input('rid');
-        $data['create_dateline'] = time();
-        DB::connection('mysql_crm')->table('admin_users')->where('id', $id)->update($data);
+        $roles = DB::connection('mysql_crm')->table('admin_role')->get();
+        foreach ($roles as &$v){
+            if(in_array($v['id'],$RoleTmp)){
+                if (isset($v['menu'][$id])){
+                    $v['menu'][$id] = $menuRoleTmp[$v['id']];
+                    $v['menu'] = json_encode($v['menu'],true);
+                }
+            }else{
+                $v['menu'] = json_decode($v['menu'],true);
+                if (isset($v['menu'][$id])){
+                    unset($v['menu'][$id]);
+                    $v['menu'] = json_encode($v['menu'],true);
+                }
+            }
+        }unset($v);
 
         $data = [
             'code' => $code,
-            'data' => [],
+            'data' => $id,
         ];
         return response()->json($data);
     }
