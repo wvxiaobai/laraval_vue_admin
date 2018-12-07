@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PermissionController extends Controller
 {
@@ -452,12 +453,13 @@ class PermissionController extends Controller
 
         $data['pid'] = $request->input('pid');
         $data['name'] = $request->input('name');
-        $data['path'] = $request->input('path');
-        $data['url'] = $request->input('url');
+        $data['path'] = $request->input('path','');
+        $data['path'] = $data['path']?$data['path']:'';
+        $data['url'] = $request->input('url','');
+        $data['url'] = $data['url']?$data['url']:'';
         DB::connection('mysql_crm')->table('admin_menu')->where('id', $id)->update($data);
 
         $menuRole = $request->input('menuRole');
-        $menuRole = json_decode($menuRole,true);
         $menuRoleTmp = [];
         $RoleTmp = [];
         foreach ($menuRole as $k=>$v){
@@ -467,25 +469,32 @@ class PermissionController extends Controller
             }
         }
 
+        Log::info('updateMenu'.json_encode($RoleTmp));
+        Log::info('updateMenu'.json_encode($menuRoleTmp));
+        DB::connection('mysql_crm')->enableQueryLog();  // 开启QueryLog
         $roles = DB::connection('mysql_crm')->table('admin_role')->get();
-        foreach ($roles as &$v){
+        foreach ($roles as $k=>$v){
+            $v = (array)$v;
+            $rolesTmp = (array)$roles[$k];
+            $menu= $v['menu']?json_decode($v['menu'],true):[];
             if(in_array($v['id'],$RoleTmp)){
-                if (isset($v['menu'][$id])){
-                    $v['menu'][$id] = $menuRoleTmp[$v['id']];
-                    $v['menu'] = json_encode($v['menu'],true);
-                }
+                $menu[$id] = $menuRoleTmp[$v['id']];
+                $rolesTmp['menu'] = json_encode($menu,true);
+                DB::connection('mysql_crm')->table('admin_role')->where('id', $v['id'])->update($rolesTmp);
+                Log::info('updateMenu'.$v['id'].'----'.json_encode($menuRoleTmp[$v['id']]).'----'.$rolesTmp['menu']);
             }else{
-                $v['menu'] = json_decode($v['menu'],true);
-                if (isset($v['menu'][$id])){
-                    unset($v['menu'][$id]);
-                    $v['menu'] = json_encode($v['menu'],true);
+                if (isset($menu[$id])){
+                    unset($menu[$id]);
+                    $rolesTmp['menu'] = json_encode($menu,true);
+                    DB::connection('mysql_crm')->table('admin_role')->where('id', $v['id'])->update($rolesTmp);
                 }
             }
-        }unset($v);
+
+        }
 
         $data = [
             'code' => $code,
-            'data' => $id,
+            'data' => $menuRoleTmp,
         ];
         return response()->json($data);
     }
