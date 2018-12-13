@@ -85,7 +85,7 @@ class PermissionController extends Controller
         $id = $request->input('id');
         $code = 20000;
         if (!$id) {
-            $code = 500;
+            $code = 50000;
             $data = [
                 'code' => $code,
                 'data' => [],
@@ -123,7 +123,7 @@ class PermissionController extends Controller
 
         $data['account'] = $request->input('account');
         if (!$data['account']) {
-            $code = 500;
+            $code = 50000;
             $data = [
                 'code' => $code,
                 'data' => [],
@@ -143,7 +143,7 @@ class PermissionController extends Controller
 
         $data['id'] = DB::connection('mysql_crm')->table('admin_users')->insertGetId($data);
         if (!$data['id']) {
-            $code = 500;
+            $code = 50000;
         }
 
         $data = [
@@ -164,7 +164,7 @@ class PermissionController extends Controller
         $id = $request->input('id');
         if (!$id) {
             $data = [
-                'code' => 500,
+                'code' => 50000,
                 'data' => [],
             ];
             return response()->json($data);
@@ -172,7 +172,7 @@ class PermissionController extends Controller
 
         $res = DB::connection('mysql_crm')->table('admin_users')->delete($id);
         if (!$res) {
-            $code = 500;
+            $code = 50000;
         }
 
         $data = [
@@ -212,7 +212,7 @@ class PermissionController extends Controller
         $data['name'] = $request->input('name');
         $code = 20000;
         if (!$id || !$data['name']) {
-            $code = 500;
+            $code = 50000;
             $data = [
                 'code' => $code,
                 'data' => [],
@@ -241,7 +241,7 @@ class PermissionController extends Controller
         $code = 20000;
         $data['name'] = $request->input('name');
         if (!$data['name']) {
-            $code = 500;
+            $code = 50000;
             $data = [
                 'code' => $code,
                 'data' => [],
@@ -254,7 +254,7 @@ class PermissionController extends Controller
 
         $data['id'] = DB::connection('mysql_crm')->table('admin_role')->insertGetId($data);
         if (!$data['id']) {
-            $code = 500;
+            $code = 50000;
         }
 
         $data = [
@@ -276,7 +276,7 @@ class PermissionController extends Controller
         $id = $request->input('id');
         if (!$id) {
             $data = [
-                'code' => 500,
+                'code' => 50000,
                 'data' => [],
             ];
             return response()->json($data);
@@ -284,7 +284,7 @@ class PermissionController extends Controller
 
         $res = DB::connection('mysql_crm')->table('admin_role')->delete($id);
         if (!$res) {
-            $code = 500;
+            $code = 50000;
         }
 
         $data = [
@@ -358,11 +358,12 @@ class PermissionController extends Controller
             $menus[$k+1] = [
                 'label' => $v['name'],
             ];
-            if($v['children']){
+            if(isset($v['children']) && $v['children']){
                 $options_tmp =  $this->_getChild($v['children']);
                 $menus[$k+1]['options'] = $options_tmp;
+                array_unshift($menus[$k+1]['options'],['value'=> $v['id'],'label'=> $v['name']]);
             }
-            array_unshift($menus[$k+1]['options'],['value'=> $v['id'],'label'=> $v['name']]);
+
         }
         $users['items'] = $tree;
         $users['indexs']= $indexs;
@@ -413,7 +414,7 @@ class PermissionController extends Controller
         $ids = $request->input('id');
         $code = 20000;
         if (!$ids) {
-            $code = 500;
+            $code = 50000;
             $data = [
                 'code' => $code,
                 'data' => [],
@@ -443,7 +444,7 @@ class PermissionController extends Controller
         $id = $request->input('id');
         $code = 20000;
         if (!$id) {
-            $code = 500;
+            $code = 50000;
             $data = [
                 'code' => $code,
                 'data' => [],
@@ -507,10 +508,10 @@ class PermissionController extends Controller
     public function createMenu(Request $request)
     {
         $code = 20000;
-
-        $data['account'] = $request->input('account');
-        if (!$data['account']) {
-            $code = 500;
+        DB::connection('mysql_crm')->enableQueryLog();  // 开启QueryLog
+        $data['name'] = $request->input('name');
+        if (!$data['name']) {
+            $code = 50001;
             $data = [
                 'code' => $code,
                 'data' => [],
@@ -518,24 +519,47 @@ class PermissionController extends Controller
             return response()->json($data);
         }
 
-        $password = $request->input('password');
-        if ($password && $password != '********') {
-            $data['password'] = $password;
+        $data['pid']  = $request->input('pid');
+        $data['name'] = $request->input('name');
+        $data['path'] = $request->input('path','');
+        $data['path'] = $data['path']?$data['path']:'';
+        $data['url']  = $request->input('url','');
+        $data['url']  = $data['url']?$data['url']:'';
+        $data['desc'] = $request->input('desc','');
+        $data['id']   = $id = DB::connection('mysql_crm')->table('admin_menu')->insertGetId($data);
+        $log[] = DB::connection('mysql_crm')->getQueryLog();
+        if (!$data['id']) {
+            $code = 50000;
         }
 
-        $data['disabled'] = $request->input('disabled');
-        $data['email'] = $request->input('email');
-        $data['rid'] = $request->input('rid');
-        $data['create_dateline'] = time();
+        if($id) {
+            $menuRole = $request->input('menuRole');
+            $menuRoleTmp = [];
+            foreach ($menuRole as $k => $v) {
+                foreach ($v as $k1 => $v1) {
+                    $menuRoleTmp[$v1][$k] = 1;
+                }
+            }
 
-        $data['id'] = DB::connection('mysql_crm')->table('admin_users')->insertGetId($data);
-        if (!$data['id']) {
-            $code = 500;
+            Log::info('updateMenu' . json_encode($menuRoleTmp));
+            $roles = DB::connection('mysql_crm')->table('admin_role')->get();
+            foreach ($roles as $k => $v) {
+                $v = (array)$v;
+                if(isset($menuRoleTmp[$v['id']])) {
+                    $rolesTmp = (array)$roles[$k];
+                    $menu = $v['menu'] ? json_decode($v['menu'], true) : [];
+                    $menu[$id] = $menuRoleTmp[$v['id']];
+                    $rolesTmp['menu'] = json_encode($menu, true);
+                    DB::connection('mysql_crm')->table('admin_role')->where('id', $v['id'])->update($rolesTmp);
+                    Log::info('updateMenu' . $v['id'] . '----' . json_encode($menuRoleTmp[$v['id']]) . '----' . $rolesTmp['menu']);
+                }
+
+            }
         }
 
         $data = [
             'code' => $code,
-            'data' => $data,
+            'data' => $log,
         ];
         return response()->json($data);
     }
@@ -551,17 +575,28 @@ class PermissionController extends Controller
         $id = $request->input('id');
         if (!$id) {
             $data = [
-                'code' => 500,
+                'code' => 50000,
                 'data' => [],
             ];
             return response()->json($data);
         }
 
-        $res = DB::connection('mysql_crm')->table('admin_users')->delete($id);
+        $res = DB::connection('mysql_crm')->table('admin_menu')->delete($id);
         if (!$res) {
-            $code = 500;
+            $code = 50000;
         }
 
+        $roles = DB::connection('mysql_crm')->table('admin_role')->get();
+        foreach ($roles as $k => $v) {
+            $v = (array)$v;
+            $menu= $v['menu']?json_decode($v['menu'],true):[];
+            if (isset($menu[$id])){
+                unset($menu[$id]);
+                $rolesTmp['menu'] = json_encode($menu,true);
+                DB::connection('mysql_crm')->table('admin_role')->where('id', $v['id'])->update($rolesTmp);
+            }
+
+        }
         $data = [
             'code' => $code,
             'data' => [],
